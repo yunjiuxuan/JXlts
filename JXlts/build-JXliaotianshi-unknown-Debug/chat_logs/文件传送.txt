@@ -1,0 +1,253 @@
+TCP文件传输
+
+客户端作为文件发送端：
+1. 创建QTcpSocket套接字对象，通过函数connectToHost()连接服务端
+2. 连接成功之后，客户端会产生连接信号connected()绑定槽函数
+3. 在槽函数中获取发送文件名称和文件大小并打开文件对象，通过成员函数write()发送信息【文件名+文件大小】给服务端
+4. 当套接字写入数据之后,会产生字节写入信号bytesWritten()绑定槽函数
+5. 在槽函数中读取read文件内容并且将文件内容通过套接字发送write服务端
+#ifndef SENDFILE_H
+#define SENDFILE_H
+
+#include <QWidget>
+#include <QFile>       //文件类
+#include <QFileInfo>   //文件属性
+#include <QFileDialog> //文件对话框
+#include <QTcpSocket>  //tcp套接字
+#include <QMessageBox> //消息盒子
+
+QT_BEGIN_NAMESPACE
+namespace Ui
+{
+class SendFile;
+}
+QT_END_NAMESPACE
+
+class SendFile : public QWidget
+{
+    Q_OBJECT
+
+  public:
+    SendFile(QWidget *parent = nullptr);
+    ~SendFile();
+
+  private slots:
+    void on_btnfile_clicked();
+
+    void on_btnsend_clicked();
+
+    void FileHead();
+    void FileData();
+
+  private:
+    Ui::SendFile *ui;
+    QTcpSocket *msocket; //客户端套接字
+    QString filename;    //文件名
+    qint64 filesize;     //文件大小
+    qint64 sendsize;     //一次发送大小
+    QFile file;          //文件对象
+};
+#endif // SENDFILE_H
+
+#include "sendfile.h"
+#include "ui_sendfile.h"
+
+SendFile::SendFile(QWidget *parent)
+    : QWidget(parent)
+    , ui(new Ui::SendFile)
+{
+    ui->setupUi(this);
+    //初始化
+    msocket = new QTcpSocket;
+    //检测套接字是否连接成功
+    connect(msocket, &QTcpSocket::connected, this, &SendFile::FileHead);
+    //当套接字写入数据之后,会产生字节写入信号bytesWritten()绑定槽函数
+    connect(msocket, &QTcpSocket::bytesWritten, this, &SendFile::FileData);
+}
+
+SendFile::~SendFile() { delete ui; }
+//获取文件
+void SendFile::on_btnfile_clicked()
+{
+    //通过文件对话框获取文件路径
+    QString filepath = QFileDialog::getOpenFileName(this, "选择发送文件");
+    //显示文件路径到输入框
+    ui->linefile->setText(filepath);
+    //通过文件属性读取文件大小
+    QFileInfo info(filepath);
+    filename = info.fileName(); //文件名
+    filesize = info.size();     //文件大小
+    QString fileinfo = QString("发送文件名称为：%1 文件大小为：%2字节").arg(filename).arg(filesize);
+    //通过标签显示文件名称和大小
+    ui->label->setText(fileinfo);
+}
+//连接服务端
+void SendFile::on_btnsend_clicked()
+{
+    //获取IP地址和端口
+    QString IP = ui->lineIP->text();
+    QString Port = ui->linePort->text();
+    //连接服务端
+    msocket->connectToHost(IP, Port.toUShort());
+    //发送大小清空
+    sendsize = 0;
+}
+//槽函数负责发送文件信息
+void SendFile::FileHead()
+{
+    //定义数组保存数据
+    QByteArray array;
+    //将数据流格式绑定到数组对象
+    QDataStream stream(&array, QIODevice::WriteOnly); //只写
+    stream << filename << filesize;                   //导入文件名和大小
+    //设置进度条大小
+    ui->progressBar->setMaximum(filesize);
+    //设置文件类对象
+    file.setFileName(ui->linefile->text()); //文件路径
+    file.open(QIODevice::ReadOnly);         //只读打开
+    //发送信号到服务端
+    msocket->write(array);
+}
+//发送文件内容
+void SendFile::FileData()
+{
+    //判断发送大小小于文件大小
+    if (sendsize < filesize)
+    {
+        QByteArray array = file.read(1024 * 10); //一次读取字节数
+        msocket->write(array);                   //套接字发送
+        sendsize += array.size();                //获取发送大小
+        ui->progressBar->setValue(sendsize);     //设置进度值
+    }
+    if (sendsize == filesize) //文件读取完毕
+    {
+        file.close();
+        msocket->disconnectFromHost(); //断开连接
+    }
+}
+
+服务端作为文件接收端：
+1. 创建QTcpServer类对象，用于监听客户端连接
+2. 调用类对象方法listen()，监听客户端对象
+3. 通过信号newConnection()绑定槽函数，该信号产生说明客户端连接成功
+4. 在槽函数中获取连接客户端对象,通过函数nextPendingConnection()获取
+5. 若客户端需要读取消息，则通过套接字读取信号readyRead()绑定槽函数
+6. 在槽函数中读取数据内容，通过函数read()或者readall()
+ 根据文件大小来判断是否为第一次读取，filesize是否等于0
+ 若filesize为0值，则第一次读取，则获取文件名和文件大小
+ 若filesize的值大于0，则第二次读取数据，则获取文件内容
+#ifndef RECVFILE_H
+#define RECVFILE_H
+
+#include <QWidget>
+#include <QFile> //文件类
+#include <QDir>
+#include <QTcpServer>  //TCP服务端
+#include <QTcpSocket>  //tcp套接字
+#include <QMessageBox> //消息盒子
+
+QT_BEGIN_NAMESPACE
+namespace Ui
+{
+class RecvFile;
+}
+QT_END_NAMESPACE
+
+class RecvFile : public QWidget
+{
+    Q_OBJECT
+
+  public:
+    RecvFile(QWidget *parent = nullptr);
+    ~RecvFile();
+
+  private slots:
+    void new_client();
+    void read_Data();
+
+  private:
+    Ui::RecvFile *ui;
+    QTcpServer *mserver; //实例化服务端
+    QString filename;    //文件名
+    qint64 filesize;     //文件大小
+    qint64 recvsize;     //一次接受大小
+    QFile file;          //文件对象
+};
+#endif // RECVFILE_H
+
+#include "recvfile.h"
+#include "ui_recvfile.h"
+
+RecvFile::RecvFile(QWidget *parent)
+    : QWidget(parent)
+    , ui(new Ui::RecvFile)
+{
+    ui->setupUi(this);
+    mserver = new QTcpServer;
+    //调用类对象方法listen()，监听客户端对象
+    mserver->listen(QHostAddress::Any, 8080);
+    if (mserver->isListening())
+    {
+        QMessageBox::warning(this, "监听提示", "监听服务已启动");
+    }
+    //通过信号newConnection()绑定槽函数，该信号产生说明客户端连接成功
+    connect(mserver, &QTcpServer::newConnection, this, &RecvFile::new_client);
+}
+
+RecvFile::~RecvFile() { delete ui; }
+//获取连接成功客户端
+void RecvFile::new_client()
+{
+    //在槽函数中获取连接客户端对象,通过函数nextPendingConnection()获取
+    QTcpSocket *msocket = mserver->nextPendingConnection();
+    //准备
+    filename.clear();
+    filesize = 0;
+    recvsize = 0;
+    //若客户端需要读取消息，则通过套接字读取信号readyRead()绑定槽函数
+    connect(msocket, &QTcpSocket::readyRead, this, &RecvFile::read_Data);
+}
+//获取读取内容
+void RecvFile::read_Data()
+{
+    //获取信号的发送者
+    QTcpSocket *msocket = dynamic_cast<QTcpSocket *>(sender());
+    // 若filesize为0值，则第一次读取，则获取文件名和文件大小
+    if (filesize == 0)
+    {
+        //读取客户端文件信息
+        QByteArray array = msocket->readAll();
+        //将数据流绑定到数组
+        QDataStream stream(&array, QIODevice::ReadOnly);
+        stream >> filename >> filesize; //文件名和大小
+        QString fileinfo = QString("发送文件名称为：%1 文件大小为：%2字节").arg(filename).arg(filesize);
+        //通过标签显示文件名称和大小
+        ui->label->setText(fileinfo);
+        //设置进度条
+        ui->progressBar->setMaximum(filesize);
+        //设置文件保存位置并打开
+        QString filepath = "/mnt/hgfs/linux/File";
+        QDir dir;
+        dir.mkpath(filepath); //创建路径
+        file.setFileName(filepath + "/" + filename);
+        file.open(QIODevice::WriteOnly); //打开
+    }
+    //若filesize的值大于0，则第二次读取数据，则获取文件内容
+    if (filesize > 0)
+    {
+        if (recvsize < filesize)
+        {
+            QByteArray array = msocket->readAll(); //读全文文件内容
+            file.write(array);
+            recvsize += array.size();
+            ui->progressBar->setValue(recvsize); //接受
+        }
+        if (recvsize == filesize)
+        {
+            file.close();
+            msocket->disconnectFromHost();
+            filesize = 0;
+        }
+    }
+}
+

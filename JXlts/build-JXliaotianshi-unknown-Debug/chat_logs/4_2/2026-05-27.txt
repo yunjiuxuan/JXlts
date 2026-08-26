@@ -1,0 +1,7 @@
+[18:34:12] 我: 
+阿为vav
+[18:34:18] 李四: 
+同时历史
+[18:34:37] 我: 发送文件 文件传送.txt (8312 字节)
+[18:34:37] 文件发送成功: 
+文件传送.txt (文件路径: /mnt/hgfs/public/YQ_VScode/JieDuan_3/project/JXlts/build-JXliaotianshi-unknown-Debug/chat_logs/文件传送.txt)

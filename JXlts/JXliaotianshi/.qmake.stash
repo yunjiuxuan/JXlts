@@ -1,0 +1,25 @@
+QMAKE_CXX.QT_COMPILER_STDCXX = 201402L
+QMAKE_CXX.QMAKE_GCC_MAJOR_VERSION = 6
+QMAKE_CXX.QMAKE_GCC_MINOR_VERSION = 5
+QMAKE_CXX.QMAKE_GCC_PATCH_VERSION = 0
+QMAKE_CXX.COMPILER_MACROS = \
+    QT_COMPILER_STDCXX \
+    QMAKE_GCC_MAJOR_VERSION \
+    QMAKE_GCC_MINOR_VERSION \
+    QMAKE_GCC_PATCH_VERSION
+QMAKE_CXX.INCDIRS = \
+    /opt/rk1808-sdk/buildroot/output/rockchip_rk1808/host/aarch64-buildroot-linux-gnu/include/c++/6.5.0 \
+    /opt/rk1808-sdk/buildroot/output/rockchip_rk1808/host/aarch64-buildroot-linux-gnu/include/c++/6.5.0/aarch64-buildroot-linux-gnu \
+    /opt/rk1808-sdk/buildroot/output/rockchip_rk1808/host/aarch64-buildroot-linux-gnu/include/c++/6.5.0/backward \
+    /opt/rk1808-sdk/buildroot/output/rockchip_rk1808/host/lib/gcc/aarch64-buildroot-linux-gnu/6.5.0/include \
+    /opt/rk1808-sdk/buildroot/output/rockchip_rk1808/host/lib/gcc/aarch64-buildroot-linux-gnu/6.5.0/include-fixed \
+    /opt/rk1808-sdk/buildroot/output/rockchip_rk1808/host/aarch64-buildroot-linux-gnu/include \
+    /opt/rk1808-sdk/buildroot/output/rockchip_rk1808/host/aarch64-buildroot-linux-gnu/sysroot/usr/include
+QMAKE_CXX.LIBDIRS = \
+    /opt/rk1808-sdk/buildroot/output/rockchip_rk1808/host/lib/gcc/aarch64-buildroot-linux-gnu/6.5.0 \
+    /opt/rk1808-sdk/buildroot/output/rockchip_rk1808/host/aarch64-buildroot-linux-gnu/lib64 \
+    /opt/rk1808-sdk/buildroot/output/rockchip_rk1808/host/aarch64-buildroot-linux-gnu/sysroot/lib64 \
+    /opt/rk1808-sdk/buildroot/output/rockchip_rk1808/host/aarch64-buildroot-linux-gnu/sysroot/usr/lib64 \
+    /opt/rk1808-sdk/buildroot/output/rockchip_rk1808/host/aarch64-buildroot-linux-gnu/lib \
+    /opt/rk1808-sdk/buildroot/output/rockchip_rk1808/host/aarch64-buildroot-linux-gnu/sysroot/lib \
+    /opt/rk1808-sdk/buildroot/output/rockchip_rk1808/host/aarch64-buildroot-linux-gnu/sysroot/usr/lib
